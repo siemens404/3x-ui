@@ -147,6 +147,11 @@
     {{template "form/wireguard"}}
 </template>
 
+<!-- mtproto -->
+<template v-if="inbound.protocol === Protocols.MTPROTO">
+    {{template "form/mtproto"}}
+</template>
+
 <!-- tun -->
 <template v-if="inbound.protocol === Protocols.TUN">
     {{template "form/tun"}}

@@ -63,6 +63,10 @@ class DBInbound {
         return this.protocol === Protocols.WIREGUARD;
     }
 
+    get isMTProto() {
+        return this.protocol === Protocols.MTPROTO;
+    }
+
     get address() {
         let address = location.hostname;
         if (!ObjectUtil.isEmpty(this.listen) && this.listen !== "0.0.0.0") {
@@ -138,6 +142,7 @@ class DBInbound {
             case Protocols.VLESS:
             case Protocols.TROJAN:
             case Protocols.SHADOWSOCKS:
+            case Protocols.MTPROTO:
                 return true;
             default:
                 return false;

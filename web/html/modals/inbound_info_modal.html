@@ -89,7 +89,21 @@
             </table>
           </template>
         </a-col>
-        <template v-if="dbInbound.hasLink()">
+        <template v-if="dbInbound.isMTProto">
+          <table :style="{ marginBottom: '10px', width: '100%' }">
+            <tr>
+              <td>{{ i18n "pages.inbounds.mtprotoSecret" }}</td>
+              <td>
+                <a-tag class="info-large-tag">[[ inbound.mtprotoSecret ]]</a-tag>
+                <a-tooltip title='{{ i18n "copy" }}'>
+                  <a-button size="small" icon="snippets"
+                    @click="copy(inbound.mtprotoSecret)"></a-button>
+                </a-tooltip>
+              </td>
+            </tr>
+          </table>
+        </template>
+        <template v-if="dbInbound.hasLink() && !dbInbound.isMTProto">
           {{ i18n "security" }}
           <a-tag :color="inbound.stream.security == 'none' ? 'red' : 'green'">[[
             inbound.stream.security ]]</a-tag>

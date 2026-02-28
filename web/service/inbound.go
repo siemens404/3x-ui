@@ -3,6 +3,7 @@
 package service
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -127,6 +128,62 @@ func (s *InboundService) checkPortExist(listen string, port int, ignoreId int) (
 	return count > 0, nil
 }
 
+func (s *InboundService) validatePortRange(port int) error {
+	if port < 1 || port > 65535 {
+		return common.NewError("invalid port:", port)
+	}
+	return nil
+}
+
+func (s *InboundService) normalizeAndValidateMTProtoSettings(inbound *model.Inbound) error {
+	if inbound.Protocol != model.MTProto {
+		return nil
+	}
+
+	settings := map[string]any{}
+	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+		return common.NewError("invalid mtproto settings:", err)
+	}
+
+	secret := ""
+	if users, ok := settings["users"].([]any); ok && len(users) > 0 {
+		if user, ok := users[0].(map[string]any); ok {
+			if rawSecret, ok := user["secret"].(string); ok {
+				secret = rawSecret
+			}
+		}
+	}
+
+	// Also accept legacy/simplified shape: {"secret":"..."}
+	if secret == "" {
+		if rawSecret, ok := settings["secret"].(string); ok {
+			secret = rawSecret
+		}
+	}
+
+	secret = strings.ToLower(strings.TrimSpace(secret))
+	if len(secret) != 32 {
+		return common.NewError("invalid mtproto secret length, expected 32 hex chars")
+	}
+	if _, err := hex.DecodeString(secret); err != nil {
+		return common.NewError("invalid mtproto secret, must be hex:", err)
+	}
+
+	settings["users"] = []map[string]any{
+		{
+			"secret": secret,
+		},
+	}
+	delete(settings, "secret")
+
+	normalized, err := json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		return err
+	}
+	inbound.Settings = string(normalized)
+	return nil
+}
+
 func (s *InboundService) GetClients(inbound *model.Inbound) ([]model.Client, error) {
 	settings := map[string][]model.Client{}
 	json.Unmarshal([]byte(inbound.Settings), &settings)
@@ -214,6 +271,13 @@ func (s *InboundService) checkEmailExistForInbound(inbound *model.Inbound) (stri
 // then saves the inbound to the database and optionally adds it to the running Xray instance.
 // Returns the created inbound, whether Xray needs restart, and any error.
 func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, bool, error) {
+	if err := s.validatePortRange(inbound.Port); err != nil {
+		return inbound, false, err
+	}
+	if err := s.normalizeAndValidateMTProtoSettings(inbound); err != nil {
+		return inbound, false, err
+	}
+
 	exist, err := s.checkPortExist(inbound.Listen, inbound.Port, 0)
 	if err != nil {
 		return inbound, false, err
@@ -379,6 +443,13 @@ func (s *InboundService) GetInbound(id int) (*model.Inbound, error) {
 // It validates changes, updates the database, and syncs with the running Xray instance.
 // Returns the updated inbound, whether Xray needs restart, and any error.
 func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, bool, error) {
+	if err := s.validatePortRange(inbound.Port); err != nil {
+		return inbound, false, err
+	}
+	if err := s.normalizeAndValidateMTProtoSettings(inbound); err != nil {
+		return inbound, false, err
+	}
+
 	exist, err := s.checkPortExist(inbound.Listen, inbound.Port, inbound.Id)
 	if err != nil {
 		return inbound, false, err

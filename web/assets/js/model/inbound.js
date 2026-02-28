@@ -7,6 +7,7 @@ const Protocols = {
     MIXED: 'mixed',
     HTTP: 'http',
     WIREGUARD: 'wireguard',
+    MTPROTO: 'mtproto',
     TUN: 'tun',
 };
 
@@ -1249,6 +1250,16 @@ class Inbound extends XrayCommonClass {
         return this.network === "xhttp";
     }
 
+    get mtprotoSecret() {
+        if (this.protocol !== Protocols.MTPROTO) {
+            return '';
+        }
+        if (this.settings?.users && this.settings.users.length > 0) {
+            return this.settings.users[0]?.secret || '';
+        }
+        return this.settings?.secret || '';
+    }
+
     // Shadowsocks
     get method() {
         switch (this.protocol) {
@@ -1711,6 +1722,17 @@ class Inbound extends XrayCommonClass {
         return txt;
     }
 
+    genMTProtoLink(address = '', port = this.port) {
+        if (this.protocol !== Protocols.MTPROTO) {
+            return '';
+        }
+        const secret = this.mtprotoSecret;
+        if (!secret) {
+            return '';
+        }
+        return `tg://proxy?server=${encodeURIComponent(address)}&port=${encodeURIComponent(port)}&secret=${encodeURIComponent(secret)}`;
+    }
+
     genLink(address = '', port = this.port, forceTls = 'same', remark = '', client) {
         switch (this.protocol) {
             case Protocols.VMESS:
@@ -1721,6 +1743,8 @@ class Inbound extends XrayCommonClass {
                 return this.genSSLink(address, port, forceTls, remark, this.isSSMultiUser ? client.password : '');
             case Protocols.TROJAN:
                 return this.genTrojanLink(address, port, forceTls, remark, client.password);
+            case Protocols.MTPROTO:
+                return this.genMTProtoLink(address, port);
             default: return '';
         }
     }
@@ -1768,6 +1792,7 @@ class Inbound extends XrayCommonClass {
             return links.join('\r\n');
         } else {
             if (this.protocol == Protocols.SHADOWSOCKS && !this.isSSMultiUser) return this.genSSLink(addr, this.port, 'same', remark);
+            if (this.protocol == Protocols.MTPROTO) return this.genMTProtoLink(addr, this.port);
             if (this.protocol == Protocols.WIREGUARD) {
                 let links = [];
                 this.settings.peers.forEach((p, index) => {
@@ -1825,6 +1850,7 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.TUNNEL: return new Inbound.TunnelSettings(protocol);
             case Protocols.MIXED: return new Inbound.MixedSettings(protocol);
             case Protocols.HTTP: return new Inbound.HttpSettings(protocol);
+            case Protocols.MTPROTO: return new Inbound.MTProtoSettings(protocol);
             case Protocols.WIREGUARD: return new Inbound.WireguardSettings(protocol);
             case Protocols.TUN: return new Inbound.TunSettings(protocol);
             default: return null;
@@ -1840,6 +1866,7 @@ Inbound.Settings = class extends XrayCommonClass {
             case Protocols.TUNNEL: return Inbound.TunnelSettings.fromJson(json);
             case Protocols.MIXED: return Inbound.MixedSettings.fromJson(json);
             case Protocols.HTTP: return Inbound.HttpSettings.fromJson(json);
+            case Protocols.MTPROTO: return Inbound.MTProtoSettings.fromJson(json);
             case Protocols.WIREGUARD: return Inbound.WireguardSettings.fromJson(json);
             case Protocols.TUN: return Inbound.TunSettings.fromJson(json);
             default: return null;
@@ -2610,6 +2637,36 @@ Inbound.HttpSettings.HttpAccount = class extends XrayCommonClass {
 
     static fromJson(json = {}) {
         return new Inbound.HttpSettings.HttpAccount(json.user, json.pass);
+    }
+};
+
+Inbound.MTProtoSettings = class extends Inbound.Settings {
+    constructor(protocol, users = [{ secret: RandomUtil.randomSeq(32, { type: "hex" }) }]) {
+        super(protocol);
+        this.users = users;
+    }
+
+    static fromJson(json = {}) {
+        if (json.users && Array.isArray(json.users) && json.users.length > 0) {
+            return new Inbound.MTProtoSettings(
+                Protocols.MTPROTO,
+                json.users.map(user => ({ secret: String(user.secret || '').toLowerCase() })),
+            );
+        }
+        if (json.secret) {
+            return new Inbound.MTProtoSettings(
+                Protocols.MTPROTO,
+                [{ secret: String(json.secret).toLowerCase() }],
+            );
+        }
+        return new Inbound.MTProtoSettings(Protocols.MTPROTO);
+    }
+
+    toJson() {
+        const secret = String(this.users?.[0]?.secret || '').toLowerCase();
+        return {
+            users: [{ secret: secret }],
+        };
     }
 };
 

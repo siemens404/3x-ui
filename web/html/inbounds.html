@@ -199,7 +199,7 @@
                             {{ i18n "edit" }}
                           </a-menu-item>
                           <a-menu-item key="qrcode"
-                            v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser) || dbInbound.isWireguard">
+                            v-if="(dbInbound.isSS && !dbInbound.toInbound().isSSMultiUser) || dbInbound.isWireguard || dbInbound.isMTProto">
                             <a-icon type="qrcode"></a-icon>
                             {{ i18n "qrCode" }}
                           </a-menu-item>
@@ -1053,7 +1053,23 @@
           isEdit: true
         });
       },
+      validateInboundInput(inbound) {
+        if (inbound.protocol !== Protocols.MTPROTO) {
+          return true;
+        }
+        if (!inbound.settings.users || !Array.isArray(inbound.settings.users) || inbound.settings.users.length === 0) {
+          inbound.settings.users = [{ secret: '' }];
+        }
+        const secret = String(inbound.settings?.users?.[0]?.secret || '').trim().toLowerCase();
+        inbound.settings.users[0].secret = secret;
+        if (!/^[0-9a-f]{32}$/.test(secret)) {
+          this.$message.error('{{ i18n "pages.inbounds.mtprotoSecretInvalid" }}');
+          return false;
+        }
+        return true;
+      },
       async addInbound(inbound, dbInbound) {
+        if (!this.validateInboundInput(inbound)) return;
         const data = {
           up: dbInbound.up,
           down: dbInbound.down,
@@ -1079,6 +1095,7 @@
         await this.submit('/panel/api/inbounds/add', data, inModal);
       },
       async updateInbound(inbound, dbInbound) {
+        if (!this.validateInboundInput(inbound)) return;
         const data = {
           up: dbInbound.up,
           down: dbInbound.down,
