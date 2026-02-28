@@ -1297,18 +1297,25 @@ func parseVlessEncOutput(output string) ([]vlessEncAuth, error) {
 	lines := strings.Split(output, "\n")
 	auths := make([]vlessEncAuth, 0, 2)
 	var current *vlessEncAuth
+	appendCurrent := func() error {
+		if current == nil {
+			return nil
+		}
+		keyType, err := inferVlessAuthKeyType(current.Label, current.Decryption, current.Encryption)
+		if err != nil {
+			return err
+		}
+		current.KeyType = string(keyType)
+		auths = append(auths, *current)
+		return nil
+	}
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		switch {
 		case strings.HasPrefix(line, "Authentication:"):
-			if current != nil {
-				keyType, err := inferVlessAuthKeyType(current.Label, current.Decryption, current.Encryption)
-				if err != nil {
-					return nil, err
-				}
-				current.KeyType = string(keyType)
-				auths = append(auths, *current)
+			if err := appendCurrent(); err != nil {
+				return nil, err
 			}
 			current = &vlessEncAuth{
 				Label: strings.TrimSpace(strings.TrimPrefix(line, "Authentication:")),
@@ -1331,13 +1338,8 @@ func parseVlessEncOutput(output string) ([]vlessEncAuth, error) {
 		}
 	}
 
-	if current != nil {
-		keyType, err := inferVlessAuthKeyType(current.Label, current.Decryption, current.Encryption)
-		if err != nil {
-			return nil, err
-		}
-		current.KeyType = string(keyType)
-		auths = append(auths, *current)
+	if err := appendCurrent(); err != nil {
+		return nil, err
 	}
 
 	if len(auths) == 0 {
