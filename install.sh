@@ -13,6 +13,48 @@ xui_service="${XUI_SERVICE:=/etc/systemd/system}"
 github_owner="${XUI_GITHUB_OWNER:=siemens404}"
 github_repo="${XUI_GITHUB_REPO:=3x-ui}"
 
+extract_tag_name() {
+    # Extract first "tag_name" value from a GitHub API JSON response
+    echo "$1" | grep -m1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+}
+
+extract_name_field() {
+    # Extract first "name" value (used for tags API fallback)
+    echo "$1" | grep -m1 '"name":' | sed -E 's/.*"([^"]+)".*/\1/'
+}
+
+fetch_latest_version_tag() {
+    local api_base="https://api.github.com/repos/${github_owner}/${github_repo}"
+    local resp=""
+    local tag=""
+
+    # 1) releases/latest
+    resp=$(curl -fsSL "${api_base}/releases/latest" 2>/dev/null)
+    tag=$(extract_tag_name "$resp")
+    if [[ -n "$tag" ]]; then
+        echo "$tag"
+        return 0
+    fi
+
+    # 2) releases list fallback (first non-draft/non-prerelease release)
+    resp=$(curl -fsSL "${api_base}/releases?per_page=10" 2>/dev/null)
+    tag=$(extract_tag_name "$resp")
+    if [[ -n "$tag" ]]; then
+        echo "$tag"
+        return 0
+    fi
+
+    # 3) tags fallback (works even when releases are not created)
+    resp=$(curl -fsSL "${api_base}/tags?per_page=1" 2>/dev/null)
+    tag=$(extract_name_field "$resp")
+    if [[ -n "$tag" ]]; then
+        echo "$tag"
+        return 0
+    fi
+
+    return 1
+}
+
 # check root
 [[ $EUID -ne 0 ]] && echo -e "${red}Fatal error: ${plain} Please run this script with root privilege \n " && exit 1
 
@@ -767,12 +809,20 @@ install_x-ui() {
     
     # Download resources
     if [ $# == 0 ]; then
-        tag_version=$(curl -Ls "https://api.github.com/repos/${github_owner}/${github_repo}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        tag_version=$(fetch_latest_version_tag)
         if [[ ! -n "$tag_version" ]]; then
             echo -e "${yellow}Trying to fetch version with IPv4...${plain}"
-            tag_version=$(curl -4 -Ls "https://api.github.com/repos/${github_owner}/${github_repo}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+            tag_version=$(curl -4 -fsSL "https://api.github.com/repos/${github_owner}/${github_repo}/releases/latest" 2>/dev/null | grep -m1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
             if [[ ! -n "$tag_version" ]]; then
-                echo -e "${red}Failed to fetch x-ui version, it may be due to GitHub API restrictions, please try it later${plain}"
+                # IPv4 fallback: tags endpoint
+                tag_version=$(curl -4 -fsSL "https://api.github.com/repos/${github_owner}/${github_repo}/tags?per_page=1" 2>/dev/null | grep -m1 '"name":' | sed -E 's/.*"([^"]+)".*/\1/')
+            fi
+            if [[ ! -n "$tag_version" ]]; then
+                echo -e "${red}Failed to fetch x-ui version from ${github_owner}/${github_repo}.${plain}"
+                echo -e "${yellow}Please verify:${plain}"
+                echo -e "  1) Repository is public"
+                echo -e "  2) A release tag exists (or at least one git tag)"
+                echo -e "  3) Server can access api.github.com"
                 exit 1
             fi
         fi
