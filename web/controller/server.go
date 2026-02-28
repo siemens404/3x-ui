@@ -333,7 +333,8 @@ func (a *ServerController) getNewEchCert(c *gin.Context) {
 
 // getNewVlessEnc generates a new VLESS encryption key.
 func (a *ServerController) getNewVlessEnc(c *gin.Context) {
-	out, err := a.serverService.GetNewVlessEnc()
+	keyType := c.Query("keyType")
+	out, err := a.serverService.GetNewVlessEnc(keyType)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.getNewVlessEncError"), err)
 		return

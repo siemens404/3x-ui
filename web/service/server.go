@@ -94,6 +94,20 @@ type Status struct {
 	} `json:"appStats"`
 }
 
+type vlessAuthKeyType string
+
+const (
+	vlessAuthKeyTypeX25519  vlessAuthKeyType = "x25519"
+	vlessAuthKeyTypeMLKEM768 vlessAuthKeyType = "mlkem768"
+)
+
+type vlessEncAuth struct {
+	Label      string `json:"label"`
+	KeyType    string `json:"keyType"`
+	Decryption string `json:"decryption"`
+	Encryption string `json:"encryption"`
+}
+
 // Release represents information about a software release from GitHub.
 type Release struct {
 	TagName string `json:"tag_name"` // The tag name of the release
@@ -1250,7 +1264,107 @@ func (s *ServerService) GetNewEchCert(sni string) (any, error) {
 	}, nil
 }
 
-func (s *ServerService) GetNewVlessEnc() (any, error) {
+func normalizeVlessAuthKeyType(raw string) (vlessAuthKeyType, error) {
+	normalized := strings.ToLower(strings.TrimSpace(raw))
+	if normalized == "" {
+		return "", common.NewError("empty key type")
+	}
+
+	clean := strings.NewReplacer("-", "", "_", "", " ", "", ",", "").Replace(normalized)
+	switch {
+	case strings.Contains(clean, "x25519") || strings.Contains(clean, "curve25519"):
+		return vlessAuthKeyTypeX25519, nil
+	case strings.Contains(clean, "mlkem"):
+		return vlessAuthKeyTypeMLKEM768, nil
+	default:
+		return "", common.NewError("unknown key type:", raw)
+	}
+}
+
+func inferVlessAuthKeyType(label, decryption, encryption string) (vlessAuthKeyType, error) {
+	for _, candidate := range []string{encryption, decryption, label} {
+		if strings.TrimSpace(candidate) == "" {
+			continue
+		}
+		if keyType, err := normalizeVlessAuthKeyType(candidate); err == nil {
+			return keyType, nil
+		}
+	}
+	return "", common.NewError("unable to infer key type from auth block")
+}
+
+func parseVlessEncOutput(output string) ([]vlessEncAuth, error) {
+	lines := strings.Split(output, "\n")
+	auths := make([]vlessEncAuth, 0, 2)
+	var current *vlessEncAuth
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "Authentication:"):
+			if current != nil {
+				keyType, err := inferVlessAuthKeyType(current.Label, current.Decryption, current.Encryption)
+				if err != nil {
+					return nil, err
+				}
+				current.KeyType = string(keyType)
+				auths = append(auths, *current)
+			}
+			current = &vlessEncAuth{
+				Label: strings.TrimSpace(strings.TrimPrefix(line, "Authentication:")),
+			}
+		case strings.HasPrefix(line, `"decryption"`) || strings.HasPrefix(line, `"encryption"`):
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) != 2 || current == nil {
+				continue
+			}
+			key := strings.Trim(parts[0], `" `)
+			val := strings.TrimSpace(parts[1])
+			val = strings.TrimSuffix(val, ",")
+			val = strings.Trim(val, `" `)
+			switch key {
+			case "decryption":
+				current.Decryption = val
+			case "encryption":
+				current.Encryption = val
+			}
+		}
+	}
+
+	if current != nil {
+		keyType, err := inferVlessAuthKeyType(current.Label, current.Decryption, current.Encryption)
+		if err != nil {
+			return nil, err
+		}
+		current.KeyType = string(keyType)
+		auths = append(auths, *current)
+	}
+
+	if len(auths) == 0 {
+		return nil, common.NewError("invalid vlessenc output: no auth blocks")
+	}
+	return auths, nil
+}
+
+func filterVlessEncAuth(auths []vlessEncAuth, requestedKeyType string) ([]vlessEncAuth, error) {
+	normalizedType, err := normalizeVlessAuthKeyType(requestedKeyType)
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]vlessEncAuth, 0, 1)
+	for _, auth := range auths {
+		if auth.KeyType == string(normalizedType) {
+			filtered = append(filtered, auth)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil, common.NewError("requested key type not available:", requestedKeyType)
+	}
+	return filtered, nil
+}
+
+func (s *ServerService) GetNewVlessEnc(requestedKeyType string) (any, error) {
 	cmd := exec.Command(xray.GetBinaryPath(), "vlessenc")
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -1258,31 +1372,16 @@ func (s *ServerService) GetNewVlessEnc() (any, error) {
 		return nil, err
 	}
 
-	lines := strings.Split(out.String(), "\n")
-	var auths []map[string]string
-	var current map[string]string
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "Authentication:") {
-			if current != nil {
-				auths = append(auths, current)
-			}
-			current = map[string]string{
-				"label": strings.TrimSpace(strings.TrimPrefix(line, "Authentication:")),
-			}
-		} else if strings.HasPrefix(line, `"decryption"`) || strings.HasPrefix(line, `"encryption"`) {
-			parts := strings.SplitN(line, ":", 2)
-			if len(parts) == 2 && current != nil {
-				key := strings.Trim(parts[0], `" `)
-				val := strings.Trim(parts[1], `" `)
-				current[key] = val
-			}
-		}
+	auths, err := parseVlessEncOutput(out.String())
+	if err != nil {
+		return nil, err
 	}
 
-	if current != nil {
-		auths = append(auths, current)
+	if strings.TrimSpace(requestedKeyType) != "" {
+		auths, err = filterVlessEncAuth(auths, requestedKeyType)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return map[string]any{

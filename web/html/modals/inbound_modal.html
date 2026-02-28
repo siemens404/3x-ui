@@ -245,8 +245,13 @@
                 this.inbound.stream.tls.settings.echConfigList = '';
             },
             async getNewVlessEnc() {
+                const selected = this.normalizeVlessAuthType(inModal.inbound.settings.selectedAuth);
+                if (!selected) {
+                    return;
+                }
+
                 inModal.loading(true);
-                const msg = await HttpUtil.get('/panel/api/server/getNewVlessEnc');
+                const msg = await HttpUtil.get('/panel/api/server/getNewVlessEnc?keyType=' + encodeURIComponent(selected));
                 inModal.loading(false);
 
                 if (!msg.success) {
@@ -254,16 +259,27 @@
                 }
 
                 const auths = msg.obj.auths || [];
-                const selected = inModal.inbound.settings.selectedAuth;
-                const block = auths.find(a => a.label === selected);
+                const block = auths.find(a => this.normalizeVlessAuthType(a.keyType || a.label) === selected);
 
                 if (!block) {
                     console.error("No auth block for", selected);
                     return;
                 }
 
+                inModal.inbound.settings.selectedAuth = selected;
                 inModal.inbound.settings.decryption = block.decryption;
                 inModal.inbound.settings.encryption = block.encryption;
+            },
+            normalizeVlessAuthType(value) {
+                if (!value) return '';
+                const normalized = String(value).toLowerCase().replace(/[\s,_-]/g, '');
+                if (normalized.includes('x25519') || normalized.includes('curve25519')) {
+                    return 'x25519';
+                }
+                if (normalized.includes('mlkem')) {
+                    return 'mlkem768';
+                }
+                return '';
             },
             clearVlessEnc() {
                 this.inbound.settings.decryption = 'none';

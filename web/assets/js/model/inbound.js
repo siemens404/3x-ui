@@ -1994,6 +1994,18 @@ Inbound.VLESSSettings = class extends Inbound.Settings {
     }
 
     static fromJson(json = {}) {
+        const normalizeSelectedAuth = (value) => {
+            if (!value) return undefined;
+            const normalized = String(value).toLowerCase().replace(/[\s,_-]/g, '');
+            if (normalized.includes('x25519') || normalized.includes('curve25519')) {
+                return 'x25519';
+            }
+            if (normalized.includes('mlkem')) {
+                return 'mlkem768';
+            }
+            return value;
+        };
+
         // Ensure testseed is always initialized as an array
         let testseed = [900, 500, 900, 256];
         if (json.testseed && Array.isArray(json.testseed) && json.testseed.length >= 4) {
@@ -2006,7 +2018,7 @@ Inbound.VLESSSettings = class extends Inbound.Settings {
             json.decryption,
             json.encryption,
             Inbound.VLESSSettings.Fallback.fromJson(json.fallbacks || []),
-            json.selectedAuth,
+            normalizeSelectedAuth(json.selectedAuth),
             testseed
         );
         return obj;
@@ -2030,7 +2042,14 @@ Inbound.VLESSSettings = class extends Inbound.Settings {
             json.fallbacks = Inbound.VLESSSettings.toJsonArray(this.fallbacks);
         }
         if (this.selectedAuth) {
-            json.selectedAuth = this.selectedAuth;
+            const normalized = String(this.selectedAuth).toLowerCase().replace(/[\s,_-]/g, '');
+            if (normalized.includes('x25519') || normalized.includes('curve25519')) {
+                json.selectedAuth = 'x25519';
+            } else if (normalized.includes('mlkem')) {
+                json.selectedAuth = 'mlkem768';
+            } else {
+                json.selectedAuth = this.selectedAuth;
+            }
         }
 
         // Only include testseed if at least one client has a flow set
