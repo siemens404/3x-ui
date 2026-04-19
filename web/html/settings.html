@@ -63,26 +63,33 @@
                   </a-tab-pane>
                   <a-tab-pane key="2" :style="{ paddingTop: '20px' }">
                     <template #tab>
+                      <a-icon type="bg-colors"></a-icon>
+                      <span>{{ i18n "pages.settings.customization.title" }}</span>
+                    </template>
+                    {{ template "settings/panel/customization" . }}
+                  </a-tab-pane>
+                  <a-tab-pane key="3" :style="{ paddingTop: '20px' }">
+                    <template #tab>
                       <a-icon type="safety"></a-icon>
                       <span>{{ i18n "pages.settings.securitySettings" }}</span>
                     </template>
                     {{ template "settings/panel/security" . }}
                   </a-tab-pane>
-                  <a-tab-pane key="3" :style="{ paddingTop: '20px' }">
+                  <a-tab-pane key="4" :style="{ paddingTop: '20px' }">
                     <template #tab>
                       <a-icon type="message"></a-icon>
                       <span>{{ i18n "pages.settings.TGBotSettings" }}</span>
                     </template>
                     {{ template "settings/panel/telegram" . }}
                   </a-tab-pane>
-                  <a-tab-pane key="4" :style="{ paddingTop: '20px' }">
+                  <a-tab-pane key="5" :style="{ paddingTop: '20px' }">
                     <template #tab>
                       <a-icon type="cloud-server"></a-icon>
                       <span>{{ i18n "pages.settings.subSettings" }}</span>
                     </template>
                     {{ template "settings/panel/subscription/general" . }}
                   </a-tab-pane>
-                  <a-tab-pane key="5" v-if="allSetting.subJsonEnable" :style="{ paddingTop: '20px' }">
+                  <a-tab-pane key="6" v-if="allSetting.subJsonEnable" :style="{ paddingTop: '20px' }">
                     <template #tab>
                       <a-icon type="code"></a-icon>
                       <span>{{ i18n "pages.settings.subSettings" }} (JSON)</span>
@@ -130,6 +137,27 @@
       remarkModels: { i: 'Inbound', e: 'Email', o: 'Other' },
       remarkSeparators: [' ', '-', '_', '@', ':', '~', '|', ',', '.', '/'],
       datepickerList: [{ name: 'Gregorian (Standard)', value: 'gregorian' }, { name: 'Jalalian (شمسی)', value: 'jalalian' }],
+      customizationThemeOptions: [
+        { label: '{{ i18n "pages.settings.customization.themeLocal" }}', value: 'local' },
+        { label: '{{ i18n "pages.settings.customization.themeLight" }}', value: 'light' },
+        { label: '{{ i18n "pages.settings.customization.themeDark" }}', value: 'dark' },
+        { label: '{{ i18n "pages.settings.customization.themeUltraDark" }}', value: 'ultra-dark' },
+      ],
+      customizationVariableItems: [
+        { key: '--color-primary-100', title: '{{ i18n "pages.settings.customization.primaryColor" }}', description: '{{ i18n "pages.settings.customization.primaryColorDesc" }}' },
+        { key: '--xui-custom-background', title: '{{ i18n "pages.settings.customization.backgroundColor" }}', description: '{{ i18n "pages.settings.customization.backgroundColorDesc" }}' },
+        { key: '--xui-custom-surface', title: '{{ i18n "pages.settings.customization.surfaceColor" }}', description: '{{ i18n "pages.settings.customization.surfaceColorDesc" }}' },
+        { key: '--xui-custom-surface-hover', title: '{{ i18n "pages.settings.customization.surfaceHoverColor" }}', description: '{{ i18n "pages.settings.customization.surfaceHoverColorDesc" }}' },
+        { key: '--xui-custom-text', title: '{{ i18n "pages.settings.customization.textColor" }}', description: '{{ i18n "pages.settings.customization.textColorDesc" }}' },
+        { key: '--xui-custom-text-muted', title: '{{ i18n "pages.settings.customization.mutedTextColor" }}', description: '{{ i18n "pages.settings.customization.mutedTextColorDesc" }}' },
+        { key: '--xui-custom-border', title: '{{ i18n "pages.settings.customization.borderColor" }}', description: '{{ i18n "pages.settings.customization.borderColorDesc" }}' },
+        { key: '--xui-custom-input-background', title: '{{ i18n "pages.settings.customization.inputColor" }}', description: '{{ i18n "pages.settings.customization.inputColorDesc" }}' },
+        { key: '--xui-custom-input-hover', title: '{{ i18n "pages.settings.customization.inputHoverColor" }}', description: '{{ i18n "pages.settings.customization.inputHoverColorDesc" }}' },
+        { key: '--xui-custom-danger', title: '{{ i18n "pages.settings.customization.dangerColor" }}', description: '{{ i18n "pages.settings.customization.dangerColorDesc" }}' },
+        { key: '--dark-color-background', title: '{{ i18n "pages.settings.customization.darkBackgroundColor" }}', description: '{{ i18n "pages.settings.customization.darkBackgroundColorDesc" }}' },
+        { key: '--dark-color-surface-100', title: '{{ i18n "pages.settings.customization.darkSurfaceColor" }}', description: '{{ i18n "pages.settings.customization.darkSurfaceColorDesc" }}' },
+        { key: '--dark-color-text-primary', title: '{{ i18n "pages.settings.customization.darkTextColor" }}', description: '{{ i18n "pages.settings.customization.darkTextColorDesc" }}' },
+      ],
       remarkSample: '',
       defaultFragment: {
         tag: "fragment",
@@ -293,7 +321,49 @@
         this.loading(false);
         if (msg.success) {
           await this.getAllSetting();
+          this.applyCustomization();
         }
+      },
+      getCustomizationVariables() {
+        if (!window.CustomizationEngine) return {};
+        return CustomizationEngine.parseVariables(this.allSetting.customizationVariables);
+      },
+      getCustomizationVariable(key) {
+        return this.getCustomizationVariables()[key] || '';
+      },
+      setCustomizationVariable(key, value) {
+        const variables = this.getCustomizationVariables();
+        const rawValue = typeof value === 'string' ? value : (value && value.target ? value.target.value : '');
+        const nextValue = rawValue.trim();
+        if (nextValue) {
+          variables[key] = nextValue;
+        } else {
+          delete variables[key];
+        }
+        this.allSetting.customizationVariables = JSON.stringify(variables, null, 2);
+      },
+      formatCustomizationVariables() {
+        try {
+          const variables = JSON.parse(this.allSetting.customizationVariables || "{}");
+          if (!variables || typeof variables !== "object" || Array.isArray(variables)) {
+            throw new Error();
+          }
+          this.allSetting.customizationVariables = JSON.stringify(variables, null, 2);
+        } catch (_) {
+          Vue.prototype.$message.error('{{ i18n "pages.settings.customization.variablesInvalid" }}');
+        }
+      },
+      resetCustomizationVariables() {
+        this.allSetting.customizationVariables = "{}";
+      },
+      applyCustomization() {
+        if (!window.CustomizationEngine) return;
+        CustomizationEngine.apply({
+          enable: this.allSetting.customizationEnable,
+          theme: this.allSetting.customizationTheme,
+          variables: this.allSetting.customizationVariables,
+          css: this.allSetting.customizationCSS,
+        });
       },
       async updateUser() {
         const sendUpdateUserRequest = async () => {

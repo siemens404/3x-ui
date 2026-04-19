@@ -3,8 +3,10 @@ package entity
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"math"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 
@@ -35,6 +37,12 @@ type AllSetting struct {
 	TrafficDiff int    `json:"trafficDiff" form:"trafficDiff"` // Traffic warning threshold percentage
 	RemarkModel string `json:"remarkModel" form:"remarkModel"` // Remark model pattern for inbounds
 	Datepicker  string `json:"datepicker" form:"datepicker"`   // Date picker format
+
+	// Customization settings
+	CustomizationEnable    bool   `json:"customizationEnable" form:"customizationEnable"`       // Enable custom panel styling
+	CustomizationTheme     string `json:"customizationTheme" form:"customizationTheme"`         // Base panel theme
+	CustomizationVariables string `json:"customizationVariables" form:"customizationVariables"` // CSS variables for custom styling
+	CustomizationCSS       string `json:"customizationCSS" form:"customizationCSS"`             // Additional custom CSS
 
 	// Telegram bot settings
 	TgBotEnable      bool   `json:"tgBotEnable" form:"tgBotEnable"`           // Enable Telegram bot notifications
@@ -106,6 +114,14 @@ type AllSetting struct {
 	// JSON subscription routing rules
 }
 
+// CustomizationSetting contains the client-safe customization payload used by the frontend theme engine.
+type CustomizationSetting struct {
+	Enable    bool   `json:"enable"`
+	Theme     string `json:"theme"`
+	Variables string `json:"variables"`
+	CSS       string `json:"css"`
+}
+
 // CheckValid validates all settings in the AllSetting struct, checking IP addresses, ports, SSL certificates, and other configuration values.
 func (s *AllSetting) CheckValid() error {
 	if s.WebListen != "" {
@@ -168,9 +184,44 @@ func (s *AllSetting) CheckValid() error {
 		s.SubJsonPath += "/"
 	}
 
+	s.CustomizationTheme = normalizeCustomizationTheme(s.CustomizationTheme)
+	if err := validateCustomizationVariables(s.CustomizationVariables); err != nil {
+		return err
+	}
+
 	_, err := time.LoadLocation(s.TimeLocation)
 	if err != nil {
 		return common.NewError("time location not exist:", s.TimeLocation)
+	}
+
+	return nil
+}
+
+func normalizeCustomizationTheme(theme string) string {
+	switch theme {
+	case "light", "dark", "ultra-dark":
+		return theme
+	default:
+		return "local"
+	}
+}
+
+func validateCustomizationVariables(value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+
+	var variables map[string]string
+	if err := json.Unmarshal([]byte(value), &variables); err != nil {
+		return common.NewError("customization variables must be a JSON object")
+	}
+
+	cssVariableName := regexp.MustCompile(`^--[a-zA-Z0-9-]+$`)
+	for key := range variables {
+		if !cssVariableName.MatchString(key) {
+			return common.NewError("customization variable name is invalid:", key)
+		}
 	}
 
 	return nil

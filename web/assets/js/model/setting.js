@@ -13,6 +13,10 @@ class AllSetting {
         this.trafficDiff = 0;
         this.remarkModel = "-ieo";
         this.datepicker = "gregorian";
+        this.customizationEnable = false;
+        this.customizationTheme = "local";
+        this.customizationVariables = "{}";
+        this.customizationCSS = "";
         this.tgBotEnable = false;
         this.tgBotToken = "";
         this.tgBotProxy = "";

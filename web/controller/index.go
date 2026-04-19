@@ -44,6 +44,7 @@ func (a *IndexController) initRouter(g *gin.RouterGroup) {
 
 	g.POST("/login", a.login)
 	g.POST("/getTwoFactorEnable", a.getTwoFactorEnable)
+	g.POST("/getCustomization", a.getCustomization)
 }
 
 // index handles the root route, redirecting logged-in users to the panel or showing the login page.
@@ -130,4 +131,10 @@ func (a *IndexController) getTwoFactorEnable(c *gin.Context) {
 	if err == nil {
 		jsonObj(c, status, nil)
 	}
+}
+
+// getCustomization retrieves the panel customization payload for the frontend theme engine.
+func (a *IndexController) getCustomization(c *gin.Context) {
+	customization, err := a.settingService.GetCustomization()
+	jsonObj(c, customization, err)
 }

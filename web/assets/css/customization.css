@@ -1,0 +1,133 @@
+html.xui-customization {
+  --xui-custom-primary: var(--color-primary-100);
+}
+
+html.xui-customization body,
+html.xui-customization .ant-layout,
+html.xui-customization #app > .ant-layout,
+html.xui-customization .ant-layout-content {
+  background-color: var(--xui-custom-background);
+  color: var(--xui-custom-text);
+}
+
+html.xui-customization .ant-card,
+html.xui-customization .ant-tabs,
+html.xui-customization .ant-modal-content,
+html.xui-customization .ant-popover-inner,
+html.xui-customization .ant-drawer-content,
+html.xui-customization .ant-collapse,
+html.xui-customization .ant-collapse-content,
+html.xui-customization .ant-table,
+html.xui-customization .ant-table-thead > tr > th,
+html.xui-customization .ant-table-tbody > tr > td,
+html.xui-customization .ant-menu,
+html.xui-customization .ant-layout-sider,
+html.xui-customization .ant-layout-sider-trigger,
+html.xui-customization .ant-select-dropdown,
+html.xui-customization .ant-dropdown-menu {
+  background-color: var(--xui-custom-surface);
+  color: var(--xui-custom-text);
+  border-color: var(--xui-custom-border);
+}
+
+html.xui-customization .ant-card-head,
+html.xui-customization .ant-tabs-bar,
+html.xui-customization .ant-list-split .ant-list-item,
+html.xui-customization .ant-table-thead > tr > th,
+html.xui-customization .ant-table-tbody > tr > td,
+html.xui-customization .ant-collapse > .ant-collapse-item,
+html.xui-customization .ant-modal-header,
+html.xui-customization .ant-modal-footer {
+  border-color: var(--xui-custom-border);
+}
+
+html.xui-customization .ant-card-head,
+html.xui-customization .ant-card-head-title,
+html.xui-customization .ant-list-item-meta-title,
+html.xui-customization .ant-form-item-label > label,
+html.xui-customization .ant-form-item,
+html.xui-customization .ant-modal-title,
+html.xui-customization .ant-modal-confirm-title,
+html.xui-customization .ant-modal-confirm-content,
+html.xui-customization .ant-popover-title,
+html.xui-customization .ant-popover-inner-content,
+html.xui-customization .ant-tabs-tab,
+html.xui-customization .ant-checkbox-wrapper,
+html.xui-customization .ant-radio-wrapper,
+html.xui-customization h1,
+html.xui-customization h2,
+html.xui-customization h3 {
+  color: var(--xui-custom-text);
+}
+
+html.xui-customization .ant-list-item-meta-description,
+html.xui-customization .ant-empty-description,
+html.xui-customization .ant-card-extra,
+html.xui-customization .ant-badge-status-text {
+  color: var(--xui-custom-text-muted);
+}
+
+html.xui-customization .ant-input,
+html.xui-customization .ant-input-number,
+html.xui-customization .ant-input-group-addon,
+html.xui-customization .ant-select-selection,
+html.xui-customization .ant-checkbox-inner,
+html.xui-customization .ant-radio-inner,
+html.xui-customization textarea.ant-input {
+  background-color: var(--xui-custom-input-background);
+  border-color: var(--xui-custom-border);
+  color: var(--xui-custom-text);
+}
+
+html.xui-customization .ant-input:hover,
+html.xui-customization .ant-input:focus,
+html.xui-customization .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
+html.xui-customization .ant-select-selection:hover,
+html.xui-customization .ant-input-number:hover {
+  background-color: var(--xui-custom-input-hover);
+}
+
+html.xui-customization .ant-menu-item:hover,
+html.xui-customization .ant-menu-submenu-title:hover,
+html.xui-customization .ant-table-tbody > tr:hover:not(.ant-table-expanded-row) > td,
+html.xui-customization .ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu-item-disabled),
+html.xui-customization .ant-select-dropdown-menu-item:hover:not(.ant-select-dropdown-menu-item-disabled) {
+  background-color: var(--xui-custom-surface-hover);
+}
+
+html.xui-customization .ant-btn-primary,
+html.xui-customization .ant-switch-checked,
+html.xui-customization .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected,
+html.xui-customization .ant-pagination-item-active,
+html.xui-customization .ant-progress-bg,
+html.xui-customization .ant-progress-success-bg {
+  background-color: var(--xui-custom-primary);
+  border-color: var(--xui-custom-primary);
+}
+
+html.xui-customization a,
+html.xui-customization .ant-tabs-tab-active,
+html.xui-customization .ant-tabs-tab:hover,
+html.xui-customization .ant-pagination-item-active a,
+html.xui-customization .normal-icon:hover {
+  color: var(--xui-custom-primary);
+}
+
+html.xui-customization .ant-btn-danger {
+  background-color: var(--xui-custom-danger);
+  border-color: var(--xui-custom-danger);
+}
+
+html.xui-customization .ant-alert-warning,
+html.xui-customization .ant-tag-orange {
+  background-color: var(--xui-custom-warning-background);
+  border-color: var(--xui-custom-warning-border);
+  color: var(--xui-custom-warning-text);
+}
+
+html.xui-customization .ant-alert-error,
+html.xui-customization .ant-tag-red {
+  background-color: var(--xui-custom-error-background);
+  border-color: var(--xui-custom-error-border);
+  color: var(--xui-custom-error-text);
+}

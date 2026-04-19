@@ -1,0 +1,60 @@
+{{define "settings/panel/customization"}}
+<a-collapse default-active-key="1">
+    <a-collapse-panel key="1" header='{{ i18n "pages.settings.customization.engine" }}'>
+        <a-setting-list-item paddings="small">
+            <template #title>{{ i18n "pages.settings.customization.enable" }}</template>
+            <template #description>{{ i18n "pages.settings.customization.enableDesc" }}</template>
+            <template #control>
+                <a-switch v-model="allSetting.customizationEnable"></a-switch>
+            </template>
+        </a-setting-list-item>
+        <a-setting-list-item paddings="small">
+            <template #title>{{ i18n "pages.settings.customization.theme" }}</template>
+            <template #description>{{ i18n "pages.settings.customization.themeDesc" }}</template>
+            <template #control>
+                <a-select :style="{ width: '100%' }" :dropdown-class-name="themeSwitcher.currentTheme"
+                    v-model="allSetting.customizationTheme" :disabled="!allSetting.customizationEnable">
+                    <a-select-option v-for="item in customizationThemeOptions" :value="item.value">
+                        <span v-text="item.label"></span>
+                    </a-select-option>
+                </a-select>
+            </template>
+        </a-setting-list-item>
+    </a-collapse-panel>
+    <a-collapse-panel key="2" header='{{ i18n "pages.settings.customization.colors" }}'>
+        <a-setting-list-item v-for="item in customizationVariableItems" :key="item.key" paddings="small">
+            <template #title>[[ item.title ]]</template>
+            <template #description>
+                <code>[[ item.key ]]</code><br>
+                <span>[[ item.description ]]</span>
+            </template>
+            <template #control>
+                <a-input :value="getCustomizationVariable(item.key)"
+                    @input="setCustomizationVariable(item.key, $event)"
+                    :disabled="!allSetting.customizationEnable"></a-input>
+            </template>
+        </a-setting-list-item>
+        <a-setting-list-item paddings="small">
+            <template #title>{{ i18n "pages.settings.customization.variables" }}</template>
+            <template #description>{{ i18n "pages.settings.customization.variablesDesc" }}</template>
+            <template #control>
+                <a-textarea class="ant-setting-textarea" :rows="10" v-model="allSetting.customizationVariables"
+                    @blur="formatCustomizationVariables" :disabled="!allSetting.customizationEnable"></a-textarea>
+                <a-button class="mt-5" @click="resetCustomizationVariables" :disabled="!allSetting.customizationEnable">
+                    {{ i18n "reset" }}
+                </a-button>
+            </template>
+        </a-setting-list-item>
+    </a-collapse-panel>
+    <a-collapse-panel key="3" header='{{ i18n "pages.settings.customization.advanced" }}'>
+        <a-setting-list-item paddings="small">
+            <template #title>{{ i18n "pages.settings.customization.customCSS" }}</template>
+            <template #description>{{ i18n "pages.settings.customization.customCSSDesc" }}</template>
+            <template #control>
+                <a-textarea class="ant-setting-textarea" :rows="12" v-model="allSetting.customizationCSS"
+                    :disabled="!allSetting.customizationEnable"></a-textarea>
+            </template>
+        </a-setting-list-item>
+    </a-collapse-panel>
+</a-collapse>
+{{end}}

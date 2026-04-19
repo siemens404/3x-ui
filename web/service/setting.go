@@ -39,6 +39,10 @@ var defaultValueMap = map[string]string{
 	"trafficDiff":                 "0",
 	"remarkModel":                 "-ieo",
 	"timeLocation":                "Local",
+	"customizationEnable":         "false",
+	"customizationTheme":          "local",
+	"customizationVariables":      "{}",
+	"customizationCSS":            "",
 	"tgBotEnable":                 "false",
 	"tgBotToken":                  "",
 	"tgBotProxy":                  "",
@@ -573,6 +577,32 @@ func (s *SettingService) GetSubJsonRules() (string, error) {
 
 func (s *SettingService) GetDatepicker() (string, error) {
 	return s.getString("datepicker")
+}
+
+func (s *SettingService) GetCustomization() (*entity.CustomizationSetting, error) {
+	enable, err := s.getBool("customizationEnable")
+	if err != nil {
+		return nil, err
+	}
+	theme, err := s.getString("customizationTheme")
+	if err != nil {
+		return nil, err
+	}
+	variables, err := s.getString("customizationVariables")
+	if err != nil {
+		return nil, err
+	}
+	css, err := s.getString("customizationCSS")
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.CustomizationSetting{
+		Enable:    enable,
+		Theme:     theme,
+		Variables: variables,
+		CSS:       css,
+	}, nil
 }
 
 func (s *SettingService) GetWarp() (string, error) {
