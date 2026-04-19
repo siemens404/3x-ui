@@ -13,24 +13,33 @@
 {{define "component/aThemeSwitch"}}
 <script>
   function createThemeSwitcher() {
+    const ENGINE_THEME_KEY = 'xui-customization-theme';
+    const normalizeTheme = (theme) => ['light', 'dark', 'ultra-dark'].includes(theme) ? theme : 'light';
     localStorage.removeItem('dark-mode');
     localStorage.removeItem('isUltraDarkThemeEnabled');
-    const isUltra = false;
-    const isDarkTheme = false;
-    function updateDocumentTheme(isDark, isUltra) {
+    const initialTheme = normalizeTheme(localStorage.getItem(ENGINE_THEME_KEY));
+    const isUltra = initialTheme === 'ultra-dark';
+    const isDarkTheme = initialTheme === 'dark' || isUltra;
+    function updateDocumentTheme(theme) {
+      theme = normalizeTheme(theme);
+      const isUltra = theme === 'ultra-dark';
+      const baseTheme = theme === 'dark' || isUltra ? 'dark' : 'light';
       if (isUltra) {
         document.documentElement.setAttribute('data-theme', 'ultra-dark');
       } else {
         document.documentElement.removeAttribute('data-theme');
       }
-      const baseTheme = isDark ? 'dark' : 'light';
-      [document.body, document.getElementById('app'), document.getElementById('message')].forEach(element => {
-        if (!element) return;
-        element.classList.remove('light', 'dark');
-        element.classList.add(baseTheme);
-      });
+      document.body.setAttribute('class', baseTheme);
+      const app = document.getElementById('app');
+      if (app) {
+        app.classList.remove('light', 'dark');
+        app.classList.add(baseTheme);
+      }
+      const message = document.getElementById('message');
+      if (message) message.className = baseTheme;
+      localStorage.setItem(ENGINE_THEME_KEY, theme);
     }
-    updateDocumentTheme(isDarkTheme, isUltra);
+    updateDocumentTheme(initialTheme);
     return {
       isDarkTheme,
       isUltra,
@@ -38,11 +47,12 @@
         return this.isDarkTheme ? 'dark' : 'light';
       },
       setTheme(theme) {
+        theme = normalizeTheme(theme);
         const isUltraTheme = theme === 'ultra-dark';
         const isDark = theme === 'dark' || isUltraTheme;
         this.isDarkTheme = isDark;
         this.isUltra = isUltraTheme;
-        updateDocumentTheme(this.isDarkTheme, this.isUltra);
+        updateDocumentTheme(theme);
       }
     };
   }

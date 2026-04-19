@@ -3,6 +3,7 @@
   const CUSTOM_CLASS = 'xui-customization';
   const CUSTOM_BACKGROUND_IMAGE_CLASS = 'xui-custom-background-image';
   const BACKGROUND_IMAGE_VARIABLE = '--xui-custom-background-image';
+  const ENGINE_THEME_KEY = 'xui-customization-theme';
   let appliedVariables = [];
   let config = {
     enable: false,
@@ -49,11 +50,15 @@
       document.documentElement.removeAttribute('data-theme');
     }
 
-    [document.body, document.getElementById('app'), document.getElementById('message')].forEach(element => {
-      if (!element) return;
-      element.classList.remove('light', 'dark');
-      element.classList.add(baseTheme);
-    });
+    document.body.setAttribute('class', baseTheme);
+    const app = document.getElementById('app');
+    if (app) {
+      app.classList.remove('light', 'dark');
+      app.classList.add(baseTheme);
+    }
+    const message = document.getElementById('message');
+    if (message) message.className = baseTheme;
+    localStorage.setItem(ENGINE_THEME_KEY, theme);
   }
 
   function updateBackgroundImageState(variables) {
@@ -111,7 +116,7 @@
   async function init() {
     if (!window.HttpUtil) return;
 
-    const msg = await window.HttpUtil.post('/getCustomization');
+    const msg = await window.HttpUtil.post('getCustomization');
     if (msg && msg.success && msg.obj) {
       apply(msg.obj);
     }
