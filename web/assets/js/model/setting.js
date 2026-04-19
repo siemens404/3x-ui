@@ -14,7 +14,7 @@ class AllSetting {
         this.remarkModel = "-ieo";
         this.datepicker = "gregorian";
         this.customizationEnable = false;
-        this.customizationTheme = "local";
+        this.customizationTheme = "light";
         this.customizationVariables = "{}";
         this.customizationCSS = "";
         this.tgBotEnable = false;

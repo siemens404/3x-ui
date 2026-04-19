@@ -3,7 +3,15 @@
 <script src="{{ .base_path }}assets/moment/moment-jalali.min.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/vue/vue.min.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/ant-design-vue/antd.min.js"></script>
+<script src="{{ .base_path }}assets/axios/axios.min.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/qs/qs.min.js"></script>
+<script src="{{ .base_path }}assets/js/axios-init.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/util/index.js?{{ .cur_ver }}"></script>
+<script>
+    const basePath = '{{ .base_path }}';
+    axios.defaults.baseURL = basePath;
+</script>
+<script src="{{ .base_path }}assets/js/customization.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/qrcode/qrious2.min.js?{{ .cur_ver }}"></script>
 <style>
     .subscription-page .subscription-link-box {
@@ -61,7 +69,6 @@
                             placement="bottomRight" trigger="click">
                             <template #content>
                                 <a-space direction="vertical" :size="10">
-                                    <a-theme-switch-login></a-theme-switch-login>
                                     <span>{{ i18n "pages.settings.language"
                                         }}</span>
                                     <a-select ref="selectLang" class="w-100" v-model="lang"

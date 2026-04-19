@@ -1,16 +1,18 @@
 (function (window, document) {
   const CUSTOM_CSS_ID = 'xui-customization-css';
   const CUSTOM_CLASS = 'xui-customization';
+  const CUSTOM_BACKGROUND_IMAGE_CLASS = 'xui-custom-background-image';
+  const BACKGROUND_IMAGE_VARIABLE = '--xui-custom-background-image';
   let appliedVariables = [];
   let config = {
     enable: false,
-    theme: 'local',
+    theme: 'light',
     variables: '{}',
     css: ''
   };
 
   function normalizeTheme(theme) {
-    return ['local', 'light', 'dark', 'ultra-dark'].includes(theme) ? theme : 'local';
+    return ['light', 'dark', 'ultra-dark'].includes(theme) ? theme : 'light';
   }
 
   function parseVariables(value) {
@@ -26,27 +28,42 @@
 
   function applyTheme(theme) {
     theme = normalizeTheme(theme);
-    if (theme === 'local') return;
 
     if (window.themeSwitcher && typeof window.themeSwitcher.setTheme === 'function') {
       window.themeSwitcher.setTheme(theme, false);
       return;
     }
 
+    setDocumentTheme(theme);
+  }
+
+  function setDocumentTheme(theme) {
+    theme = normalizeTheme(theme);
     const isDark = theme === 'dark' || theme === 'ultra-dark';
     const isUltra = theme === 'ultra-dark';
-    document.body.className = isDark ? 'dark' : 'light';
+    const baseTheme = isDark ? 'dark' : 'light';
 
     if (isUltra) {
       document.documentElement.setAttribute('data-theme', 'ultra-dark');
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
+
+    [document.body, document.getElementById('app'), document.getElementById('message')].forEach(element => {
+      if (!element) return;
+      element.classList.remove('light', 'dark');
+      element.classList.add(baseTheme);
+    });
+  }
+
+  function updateBackgroundImageState(variables) {
+    document.documentElement.classList.toggle(CUSTOM_BACKGROUND_IMAGE_CLASS, !!variables[BACKGROUND_IMAGE_VARIABLE]);
   }
 
   function clearVariables() {
     appliedVariables.forEach(key => document.documentElement.style.removeProperty(key));
     appliedVariables = [];
+    updateBackgroundImageState({});
   }
 
   function applyVariables(variables) {
@@ -56,6 +73,7 @@
       document.documentElement.style.setProperty(key, variables[key]);
       appliedVariables.push(key);
     });
+    updateBackgroundImageState(variables);
   }
 
   function applyCustomCSS(css) {
@@ -79,6 +97,7 @@
     document.documentElement.classList.toggle(CUSTOM_CLASS, !!config.enable);
 
     if (!config.enable) {
+      applyTheme('light');
       clearVariables();
       applyCustomCSS('');
       return;
@@ -106,7 +125,7 @@
       return config;
     },
     applyThemePreference(themeSwitcher) {
-      if (!config.enable || normalizeTheme(config.theme) === 'local') return;
+      if (!config.enable) return;
       themeSwitcher.setTheme(config.theme, false);
     }
   };

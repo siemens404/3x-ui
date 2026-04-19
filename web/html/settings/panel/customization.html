@@ -29,7 +29,25 @@
                 <span>[[ item.description ]]</span>
             </template>
             <template #control>
-                <a-input :value="getCustomizationVariable(item.key)"
+                <template v-if="item.type === 'background-image'">
+                    <a-input :value="getCustomizationBackgroundImage()"
+                        @input="setCustomizationBackgroundImage"
+                        :disabled="!allSetting.customizationEnable"
+                        placeholder="https://example.com/background.gif"></a-input>
+                    <a-space class="mt-5">
+                        <a-button @click="selectCustomizationBackgroundImage"
+                            :disabled="!allSetting.customizationEnable">
+                            {{ i18n "pages.settings.customization.chooseImage" }}
+                        </a-button>
+                        <a-button @click="clearCustomizationBackgroundImage"
+                            :disabled="!allSetting.customizationEnable || !getCustomizationBackgroundImage()">
+                            {{ i18n "reset" }}
+                        </a-button>
+                    </a-space>
+                    <input ref="customizationBackgroundImageInput" type="file" accept="image/*,.gif"
+                        style="display: none" @change="readCustomizationBackgroundImageFile">
+                </template>
+                <a-input v-else :value="getCustomizationVariable(item.key)"
                     @input="setCustomizationVariable(item.key, $event)"
                     :disabled="!allSetting.customizationEnable"></a-input>
             </template>

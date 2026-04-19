@@ -138,14 +138,16 @@
       remarkSeparators: [' ', '-', '_', '@', ':', '~', '|', ',', '.', '/'],
       datepickerList: [{ name: 'Gregorian (Standard)', value: 'gregorian' }, { name: 'Jalalian (شمسی)', value: 'jalalian' }],
       customizationThemeOptions: [
-        { label: '{{ i18n "pages.settings.customization.themeLocal" }}', value: 'local' },
         { label: '{{ i18n "pages.settings.customization.themeLight" }}', value: 'light' },
         { label: '{{ i18n "pages.settings.customization.themeDark" }}', value: 'dark' },
         { label: '{{ i18n "pages.settings.customization.themeUltraDark" }}', value: 'ultra-dark' },
       ],
+      customizationBackgroundColorKey: '--xui-custom-background',
+      customizationBackgroundImageKey: '--xui-custom-background-image',
       customizationVariableItems: [
         { key: '--color-primary-100', title: '{{ i18n "pages.settings.customization.primaryColor" }}', description: '{{ i18n "pages.settings.customization.primaryColorDesc" }}' },
         { key: '--xui-custom-background', title: '{{ i18n "pages.settings.customization.backgroundColor" }}', description: '{{ i18n "pages.settings.customization.backgroundColorDesc" }}' },
+        { key: '--xui-custom-background-image', type: 'background-image', title: '{{ i18n "pages.settings.customization.backgroundImage" }}', description: '{{ i18n "pages.settings.customization.backgroundImageDesc" }}' },
         { key: '--xui-custom-surface', title: '{{ i18n "pages.settings.customization.surfaceColor" }}', description: '{{ i18n "pages.settings.customization.surfaceColorDesc" }}' },
         { key: '--xui-custom-surface-hover', title: '{{ i18n "pages.settings.customization.surfaceHoverColor" }}', description: '{{ i18n "pages.settings.customization.surfaceHoverColorDesc" }}' },
         { key: '--xui-custom-text', title: '{{ i18n "pages.settings.customization.textColor" }}', description: '{{ i18n "pages.settings.customization.textColorDesc" }}' },
@@ -300,6 +302,7 @@
 
           this.oldAllSetting = new AllSetting(msg.obj);
           this.allSetting = new AllSetting(msg.obj);
+          this.normalizeCustomizationTheme();
           app.changeRemarkSample();
           this.saveBtnDisable = true;
         }
@@ -331,16 +334,86 @@
       getCustomizationVariable(key) {
         return this.getCustomizationVariables()[key] || '';
       },
+      normalizeCustomizationTheme() {
+        if (!['light', 'dark', 'ultra-dark'].includes(this.allSetting.customizationTheme)) {
+          this.allSetting.customizationTheme = 'light';
+        }
+        if (!['light', 'dark', 'ultra-dark'].includes(this.oldAllSetting.customizationTheme)) {
+          this.oldAllSetting.customizationTheme = 'light';
+        }
+      },
       setCustomizationVariable(key, value) {
         const variables = this.getCustomizationVariables();
         const rawValue = typeof value === 'string' ? value : (value && value.target ? value.target.value : '');
         const nextValue = rawValue.trim();
         if (nextValue) {
           variables[key] = nextValue;
+          if (key === this.customizationBackgroundColorKey) {
+            delete variables[this.customizationBackgroundImageKey];
+          }
         } else {
           delete variables[key];
         }
         this.allSetting.customizationVariables = JSON.stringify(variables, null, 2);
+      },
+      getCustomizationBackgroundImage() {
+        return this.unwrapCssUrl(this.getCustomizationVariable(this.customizationBackgroundImageKey));
+      },
+      setCustomizationBackgroundImage(value) {
+        const variables = this.getCustomizationVariables();
+        const rawValue = typeof value === 'string' ? value : (value && value.target ? value.target.value : '');
+        const nextValue = rawValue.trim();
+        if (nextValue) {
+          variables[this.customizationBackgroundImageKey] = this.toCssUrl(nextValue);
+          delete variables[this.customizationBackgroundColorKey];
+        } else {
+          delete variables[this.customizationBackgroundImageKey];
+        }
+        this.allSetting.customizationVariables = JSON.stringify(variables, null, 2);
+      },
+      clearCustomizationBackgroundImage() {
+        this.setCustomizationBackgroundImage('');
+        const input = this.getCustomizationBackgroundImageInput();
+        if (input) {
+          input.value = '';
+        }
+      },
+      selectCustomizationBackgroundImage() {
+        const input = this.getCustomizationBackgroundImageInput();
+        if (input) {
+          input.click();
+        }
+      },
+      getCustomizationBackgroundImageInput() {
+        const input = this.$refs.customizationBackgroundImageInput;
+        return Array.isArray(input) ? input[0] : input;
+      },
+      readCustomizationBackgroundImageFile(event) {
+        const input = event && event.target;
+        const file = input && input.files && input.files[0];
+        if (!file) return;
+        const isImage = file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.gif');
+        if (!isImage) {
+          Vue.prototype.$message.error('{{ i18n "pages.settings.customization.backgroundImageInvalid" }}');
+          input.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          this.setCustomizationBackgroundImage(reader.result || '');
+          input.value = '';
+        };
+        reader.onerror = () => Vue.prototype.$message.error('{{ i18n "pages.settings.customization.backgroundImageInvalid" }}');
+        reader.readAsDataURL(file);
+      },
+      toCssUrl(value) {
+        if (/^url\(/i.test(value)) return value;
+        return `url("${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`;
+      },
+      unwrapCssUrl(value) {
+        const match = String(value || '').trim().match(/^url\((.*)\)$/i);
+        if (!match) return value || '';
+        return match[1].trim().replace(/^["']|["']$/g, '').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
       },
       formatCustomizationVariables() {
         try {

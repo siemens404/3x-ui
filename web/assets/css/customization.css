@@ -10,6 +10,21 @@ html.xui-customization .ant-layout-content {
   color: var(--xui-custom-text);
 }
 
+html.xui-customization.xui-custom-background-image body,
+html.xui-customization.xui-custom-background-image #app {
+  background-image: var(--xui-custom-background-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+html.xui-customization.xui-custom-background-image .ant-layout,
+html.xui-customization.xui-custom-background-image #app > .ant-layout,
+html.xui-customization.xui-custom-background-image .ant-layout-content {
+  background-color: transparent;
+}
+
 html.xui-customization .ant-card,
 html.xui-customization .ant-tabs,
 html.xui-customization .ant-modal-content,

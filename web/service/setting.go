@@ -40,7 +40,7 @@ var defaultValueMap = map[string]string{
 	"remarkModel":                 "-ieo",
 	"timeLocation":                "Local",
 	"customizationEnable":         "false",
-	"customizationTheme":          "local",
+	"customizationTheme":          "light",
 	"customizationVariables":      "{}",
 	"customizationCSS":            "",
 	"tgBotEnable":                 "false",

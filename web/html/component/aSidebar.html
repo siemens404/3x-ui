@@ -3,7 +3,6 @@
     <div class="ant-sidebar">
         <a-layout-sider :theme="themeSwitcher.currentTheme" collapsible :collapsed="collapsed"
             @collapse="(isCollapsed, type) => collapseHandle(isCollapsed, type)" breakpoint="md">
-            <a-theme-switch></a-theme-switch>
             <a-menu :theme="themeSwitcher.currentTheme" mode="inline" :selected-keys="activeTab"
                 @click="({key}) => openLink(key)">
                 <a-menu-item v-for="tab in tabs" :key="tab.key">
@@ -17,7 +16,6 @@
             <div class="drawer-handle" @click="toggleDrawer" slot="handle">
                 <a-icon :type="visible ? 'close' : 'menu-fold'"></a-icon>
             </div>
-            <a-theme-switch></a-theme-switch>
             <a-menu :theme="themeSwitcher.currentTheme" mode="inline" :selected-keys="activeTab"
                 @click="({key}) => openLink(key)">
                 <a-menu-item v-for="tab in tabs" :key="tab.key">

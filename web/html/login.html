@@ -33,7 +33,6 @@
                 placement="bottomRight" trigger="click">
                 <template slot="content">
                   <a-space direction="vertical" :size="10">
-                    <a-theme-switch-login></a-theme-switch-login>
                     <span>{{ i18n "pages.settings.language" }}</span>
                     <a-select ref="selectLang" class="w-100" v-model="lang" @change="LanguageManager.setLanguage(lang)"
                       :dropdown-class-name="themeSwitcher.currentTheme">

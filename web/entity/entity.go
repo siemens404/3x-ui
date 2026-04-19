@@ -202,7 +202,7 @@ func normalizeCustomizationTheme(theme string) string {
 	case "light", "dark", "ultra-dark":
 		return theme
 	default:
-		return "local"
+		return "light"
 	}
 }
 
